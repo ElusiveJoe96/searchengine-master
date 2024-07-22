@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    username: postgres
+    password: postgres1
+    url: jdbc:postgresql://localhost:5432/postgres
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+indexing-settings:
+  sites:
+    - url: http://museumgorkogo.ru/
+      name: Музей Горького
+    - url: https://volgoduma.ru/
+      name: Волгоградская Дума
+    - url: http://www.playback.ru/
+      name: PlayBack
+    - url: https://www.svetlovka.ru/
+      name: Светлова
+
+connect:
+  useragent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.53 Safari/537.36
+  referrer: http://www.google.com
+
+file:
+  extensions: pdf|PDF|docx?|DOCX?|xlsx?|XLSX?|pptx?|PPTX?|jpe?g|JPE?G|gif|GIF|png|PNG|mp3|MP3|mp4|MP4|aac|AAC|json|JSON|csv|CSV|exe|EXE|apk|APK|rar|RAR|zip|ZIP|xml|XML|jar|JAR|bin|BIN|svg|SVG|nc|NC|webp|WEBP|m|M|fig|FIG|eps|EPS
+
+selector:
+  weight:
+    title: 1.0
+    body: 0.8
+
+snippet:
+  border: 5
+
+page:
+  frequency:
+    limit: 95
+
+error:
+  interrupted: Indexing stopped by user
+  certificate: Site's certificate validity check failed
+  unknown: Unknown error
