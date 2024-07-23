@@ -15,7 +15,7 @@ import java.util.TreeMap;
 public class StringUtil {
 
     private final String SLASH = "/";
-    private final StringBuilder BUILDER = new StringBuilder();
+    private final StringBuffer BUILDER = new StringBuffer();
 
     public String cutSlash(String siteNameWithSlash) {
         return siteNameWithSlash.substring(0, siteNameWithSlash.length() - 1);

@@ -7,7 +7,6 @@ import org.hibernate.annotations.OnDeleteAction;
 import javax.persistence.*;
 
 @Data
-@NoArgsConstructor(force = true)
 @RequiredArgsConstructor
 @Entity
 @Table(name = "search_index")
@@ -17,19 +16,22 @@ public class IndexEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @NonNull
     @ManyToOne
     @JoinColumn(name = "page_id", referencedColumnName = "id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private PageEntity page;
 
-    @NonNull
     @ManyToOne
     @JoinColumn(name = "lemma_id", referencedColumnName = "id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private LemmaEntity lemma;
 
-    @NonNull
     @Column(name = "lemma_rank", nullable = false)
     private float lemmaRank;
+
+    public IndexEntity(PageEntity page, LemmaEntity lemmaEntity, float lemmaRank) {
+        this.page = page;
+        this.lemma = lemmaEntity;
+        this.lemmaRank = lemmaRank;
+    }
 }

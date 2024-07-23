@@ -8,25 +8,21 @@ import javax.persistence.*;
 import java.util.List;
 
 @Data
-@NoArgsConstructor(force = true)
 @RequiredArgsConstructor
 @Entity
-@Table(name = "Lemmas")
+@Table(name = "lemmas")
 public class LemmaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @NonNull
     @Column(nullable = false)
     private String lemma;
 
-    @NonNull
     @Column(nullable = false)
     private int frequency;
 
-    @NonNull
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
@@ -34,4 +30,10 @@ public class LemmaEntity {
 
     @OneToMany(mappedBy = "lemma", cascade = CascadeType.ALL)
     private List<IndexEntity> indexEntities;
+
+    public LemmaEntity(String lemma, int i, SiteEntity siteEntity) {
+        this.lemma = lemma;
+        this.frequency = i;
+        this.site = siteEntity;
+    }
 }

@@ -31,6 +31,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,7 +50,7 @@ public class IndexingServiceImpl implements IndexingService {
     @Getter
     private final PropertiesHolder properties;
 
-    private volatile boolean isIndexing = false;
+    private AtomicBoolean isIndexing = new AtomicBoolean(false);
     private ForkJoinPool forkJoinPool = new ForkJoinPool();
     @Getter
     private Set<String> webpagesPathSet;
@@ -61,7 +62,7 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public ResponseEntity<ApiResponse> startIndexing() {
         ApiResponse apiResponse = new ApiResponse();
-        if (isIndexing) {
+        if (isIndexing.get()) {
             apiResponse.setResult(false);
             apiResponse.setError("Indexing already started");
         } else {
@@ -74,7 +75,7 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public ResponseEntity<ApiResponse> stopIndexing() {
         ApiResponse apiResponse = new ApiResponse();
-        if (isIndexing) {
+        if (isIndexing.get()) {
             shutdown();
             apiResponse.setResult(true);
         } else {
@@ -98,6 +99,7 @@ public class IndexingServiceImpl implements IndexingService {
         } catch (SiteException siteException) {
             apiResponse.setResult(false);
             apiResponse.setError("Path incorrect");
+            log.warn(siteException);
         }
         return ResponseEntity.ok(apiResponse);
     }
@@ -184,6 +186,22 @@ public class IndexingServiceImpl implements IndexingService {
         fixSiteStatusAfterSinglePageIndexed(siteEntity);
     }
 
+    private void indexSingleSite(Site site) {
+        try {
+            PageCrawlerUnit pageCrawlerUnit = initCollectionsForSiteAndCreateMainPageCrawlerUnit(site);
+            forkJoinPool.invoke(pageCrawlerUnit);
+            fillInLemmaAndIndexTables(site);
+            markSiteAsIndexed(site);
+            log.info("Indexing SUCCESSFULLY completed for site '{}'", site.getName());
+        } catch (Exception exception) {
+            log.warn("FAILED to complete indexing '{}' due to '{}'", site.getName(), exception);
+            fixSiteIndexingError(site, exception);
+            clearLemmaAndIndexCollections(site);
+        } finally {
+            markIndexingCompletionIfApplicable();
+        }
+    }
+
     private SiteEntity createSiteToHandleSinglePage(String siteHomePageToSave) {
         SiteEntity siteEntity = new SiteEntity();
         String currentSiteHomePage;
@@ -198,7 +216,7 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     private void indexAll() {
-        isIndexing = true;
+        isIndexing.set(true);
         forkJoinPool = new ForkJoinPool();
         lemmasMapGropedBySiteId = new ConcurrentHashMap<>();
         indexEntityMapGropedBySiteId = new ConcurrentHashMap<>();
@@ -230,21 +248,7 @@ public class IndexingServiceImpl implements IndexingService {
         return false;
     }
 
-    private void indexSingleSite(Site site) {
-        try {
-            PageCrawlerUnit pageCrawlerUnit = initCollectionsForSiteAndCreateMainPageCrawlerUnit(site);
-            forkJoinPool.invoke(pageCrawlerUnit);
-            fillInLemmaAndIndexTables(site);
-            markSiteAsIndexed(site);
-            log.info("Indexing SUCCESSFULLY completed for site '{}'", site.getName());
-        } catch (Exception exception) {
-            log.warn("FAILED to complete indexing '{}' due to '{}'", site.getName(), exception);
-            fixSiteIndexingError(site, exception);
-            clearLemmaAndIndexCollections(site);
-        } finally {
-            markIndexingCompletionIfApplicable();
-        }
-    }
+
 
     private SiteEntity findOrCreateNewSiteEntity(String url) {
         String siteUrlFromPageUrl = StringUtil.getStartPage(url);
@@ -325,7 +329,7 @@ public class IndexingServiceImpl implements IndexingService {
                 return;
             }
         }
-        isIndexing = false;
+        isIndexing.set(false);
     }
 
     private void savePageAndSite(PageEntity pageEntity, String pageHtml, SiteEntity siteEntity) {
